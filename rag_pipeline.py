@@ -21,9 +21,10 @@ def read_text_chunks(file_path, chunk_size=300):
         words = f.read().split()
     return [' '.join(words[i:i+chunk_size]) for i in range(0, len(words), chunk_size)]
 
-def run_rag_pipeline(query, file_path='data.txt'):
-    chunks = read_text_chunks(file_path)
-    retriever = Retriever(chunks)
+chunks = read_text_chunks("data.txt")
+retriever = Retriever(chunks)
+
+def run_rag_pipeline(query):
     top_chunks = retriever.retrieve(query)
     prompt = build_prompt(query, top_chunks)
     return generate_answer(prompt)

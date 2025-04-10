@@ -12,10 +12,15 @@ from embedder import embed_text
 from vector_store import VectorStore
 
 class Retriever:
-    def __init__(self, chunks):
-        self.vs = VectorStore()
-        embeddings = embed_text(chunks)
-        self.vs.build_index(embeddings, chunks)
+    _instance = None
+
+    def __new__(cls, chunks):
+        if cls._instance is None:
+            cls._instance = super(Retriever, cls).__new__(cls)
+            cls._instance.vs = VectorStore()
+            embeddings = embed_text(chunks)
+            cls._instance.vs.build_index(embeddings, chunks)
+        return cls._instance
 
     def retrieve(self, query, k=3):
         query_embedding = embed_text([query])[0]

@@ -1,88 +1,150 @@
-# RAG
 
-A minimalist Retrieval-Augmented Generation (RAG) pipeline using:
-- **FAISS** for vector similarity search
-- **Sentence-Transformers** for embedding text
-- **Gemini 2.0 Flash** for AI-powered answer generation
+# Retrieval-Augmented Generation (RAG) System
 
-Designed for simplicity and learning, this project works with a single large text file to answer questions grounded in your data.
+## 📌 Overview
 
----
+This project implements a minimal RAG (Retrieval-Augmented Generation) pipeline using:
 
-## 📁 Project Structure
+-   **Streamlit** for the user interface
+    
+-   **SentenceTransformers** for generating embeddings
+    
+-   **FAISS** for similarity search
+    
+-   **Gemini** (or another LLM) for final answer generation
+    
+
+## 🔁 System Workflow (High-Level)
+
+```text
+              ┌─────────────────────────────────────────────────────┐
+              │                  SYSTEM WORKFLOW                    │
+              └─────────────────────────────────────────────────────┘
+
+                          User Inputs Text Chunks (Documents)
+                                       │
+                                       ▼
+                         ┌─────────────────────────────┐
+                         │ SentenceTransformer Model   │
+                         │  (Embeds each chunk)        │
+                         └─────────────────────────────┘
+                                       │
+                          Produces Embeddings (Vectors)
+                                       │
+                                       ▼
+                            ┌────────────────────┐
+                            │   FAISS Indexing   │
+                            │  (Vector Database) │
+                            └────────────────────┘
+                                       
+                                       
+                        ┌─────────────────────────────┐
+                        │  User Query (e.g. question) │
+                        └─────────────────────────────┘
+                                       │
+                          Query is embedded (vectorized)
+                                       │
+                                       ▼
+                       ┌──────────────────────────────────┐
+                       │ Vector Similarity Search (FAISS) │
+                       └──────────────────────────────────┘
+                                       │
+                      Returns Top-K Most Relevant Chunks
+                                       │
+                                       ▼
+                         ┌─────────────────────────────┐
+                         │ Language Model (e.g. Gemini)│
+                         │ Generates Final Response    │
+                         └─────────────────────────────┘
 
 ```
-rag/
-│
-├── data.txt             # Your knowledge source (large text file)
-├── embedder.py          # Converts text chunks into embeddings
-├── vector_store.py      # Builds and queries the FAISS index
-├── retriever.py         # Retrieves relevant text chunks using FAISS
-├── generator.py         # Generates answers using Gemini API
-├── prompt.py            # Formats the final prompt for Gemini
-├── rag_pipeline.py      # Ties all components into a complete pipeline
-├── app.py               # CLI interface to ask questions
-├── .env                 # Stores your GOOGLE_API_KEY securely
-└── requirements.txt     # Required Python dependencies
+
+----------
+
+## 🧠 Example Walkthrough
+
+### 1. Input Chunks
+
+```python
+chunks: List[str] = [
+    "RAG stands for Retrieval-Augmented Generation.",
+    "It improves language model accuracy by grounding answers in facts.",
+    "We use FAISS to search relevant chunks.",
+    "Gemini generates the final answer."
+]
+
 ```
 
----
+### 2. Generate Embeddings
 
-## 🚀 Getting Started
+Each chunk is converted to a 384-dimensional vector.
 
-### 1. Clone the repository
+```python
+embeddings: List[List[float]] = [
+    [0.12, -0.03, ..., 0.45],  # Embedding for chunk 1
+    [0.11, -0.05, ..., 0.42],
+    [0.08, -0.06, ..., 0.33],
+    [0.10, -0.02, ..., 0.29],
+]
 
-```bash
-git clone https://github.com/TechManTejas/rag.git
-cd rag
 ```
 
-### 2. Install dependencies
+### 3. Store in FAISS
+
+FAISS index stores vectors for fast similarity search.
+
+```text
+FAISS Index (L2 Distance)
+┌────┬────────────────────────────┐
+│ ID │ Vector                     │
+├────┼────────────────────────────┤
+│ 0  │ [0.12, -0.03, ..., 0.45]   │
+│ 1  │ [0.11, -0.05, ..., 0.42]   │
+│ 2  │ [0.08, -0.06, ..., 0.33]   │
+│ 3  │ [0.10, -0.02, ..., 0.29]   │
+└────┴────────────────────────────┘
+
+```
+
+### 4. Query Time!
+
+```python
+query = "What is RAG?"
+query_embedding = embed_text([query])[0]  # [0.13, -0.04, ..., 0.44]
+
+```
+
+### 5. Search Top-K
+
+```text
+I = [[0, 1, 2]]  # Indices of top-3 closest vectors
+
+```
+
+### 6. Final Retrieved Chunks
+
+```python
+[
+    "RAG stands for Retrieval-Augmented Generation.",
+    "It improves language model accuracy by grounding answers in facts.",
+    "We use FAISS to search relevant chunks."
+]
+
+```
+
+## ✅ How to Run
 
 ```bash
 pip install -r requirements.txt
-```
-
-### 3. Set up your `.env` file
-
-Create a `.env` file in the project root:
+streamlit run app.py
 
 ```
-GOOGLE_API_KEY=your_gemini_api_key
-```
+    
 
-> You can get your Gemini API key from: [https://makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
+## ❤️ Credits
 
-### 4. Add your data
-
-Put your large text into `data.txt`. This will be chunked, embedded, and indexed.
-
-### 5. Run the app
-
-```bash
-python app.py
-```
-
-Type your question and get AI-generated answers using your data.
-
----
-
-## 🧠 How it works
-
-1. **Embedding**: Your text is split into chunks and converted into vectors using SentenceTransformers.
-2. **Storage**: The vectors are indexed using FAISS for fast similarity search.
-3. **Retrieval**: A user query is embedded and top-k similar chunks are retrieved.
-4. **Generation**: The query and retrieved context are sent to Gemini, which generates a natural answer.
-
----
-
-## 🛠 Requirements
-
-- Python 3.8+
-- Internet access (to call Gemini API)
-
----
-
-## 📃 License
-
-MIT License
+-   [SentenceTransformers](https://www.sbert.net/)
+    
+-   [FAISS](https://github.com/facebookresearch/faiss)
+    
+-   [Streamlit](https://streamlit.io/)
